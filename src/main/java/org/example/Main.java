@@ -13,7 +13,7 @@ import static org.example.ListService.mergingGroups;
 public class Main {
     public static void main(String[] args) throws IOException {
 
-        int numBytes = 1024 * 8;
+        int numBytes = 1024 * 4;
         long start = System.nanoTime();
         String outname;
         try {
@@ -24,7 +24,6 @@ public class Main {
         }
 // outname - имя файла для записи результатов
         List<List<Float>> inputList = new ArrayList<>(); //быстрый способ создать коллекцию
-        Set<Integer> inputSet = new HashSet<>();
 ////        try (GZIPInputStream gzip = new GZIPInputStream(new URL("https://github.com/PeacockTeam/new-job/releases/download/v1.0/lng-4.txt.gz").openStream());
         //       URL url = new URL("https:\\github.com\\PeacockTeam\\new-job\\releases\\download\\v1.0\\lng-big.7z");
         String inputName = "C:\\Users\\alkor\\Downloads\\lng-big.7z";
@@ -61,25 +60,20 @@ public class Main {
                     List<String> contentList = Arrays.asList(primaryContent.split("\n"));
                     for (String content : contentList) {
                         List<String> scanList = Arrays.asList(content.split(";"));
-//          List<String> scanList = new ArrayList<>();
 // разделили строку на слова по разделителю ";"
                         try {
 // преобразовываем лист слов в лист чисел
                             List<Float> result = new ArrayList<>();
                             for (String s : scanList) {
                                 String x = s.replaceAll("[^\\d.]", "");
-//                   = s.replaceAll("[^0-9.]", "");
-                                Float val = (x.length() > 2 ? Float.valueOf(x) : 0);
+                                Float val = (x.length() > 2 ? Float.parseFloat(x) : 0);
                                 result.add(val);
-                                if (val > 0) {
-                                    inputSet.add(val.intValue());
-                                }
                             }
 
                             if (result.size() > 0) {
                                 inputList.add(result);
                             }
-// т.е. в каждой строке у нас записаны элементы - "0" либо 11-значные числа
+// т.е. в каждой строке у нас записаны элементы - "0" либо числа типа Double
                         } catch (NumberFormatException e) {
                             System.out.println("Ошибка NumberFormat: " + e.getMessage());
                             // "бракованные" строки пропускаем
@@ -94,29 +88,18 @@ public class Main {
         }
 
         int inputListSize = inputList.size();
-        System.out.println("Размер сэта = " + inputSet.size());
-//   В сэте кол-во оригинальных чисел int = float до запятой
         System.out.println("Размер list = " + inputListSize);
         if (inputListSize > 0) {
 
             inputList.sort(new MyListComparator());
             int maxL = inputList.get(0).size(); //максимальная длина строки (пока для справки)
 
-//            if (inputListSize > 12) {
-//                for (int i =0; i<6; i++) System.out.println("line "+i+" : "+inputList.get(i));
-//                System.out.println("line "+inputListSize/6+" : "+inputList.get(inputListSize/6));
-//                System.out.println("line "+inputListSize/3+" : "+inputList.get(inputListSize/3));
-//                System.out.println("line "+inputListSize/2+" : "+inputList.get(inputListSize/2));
-//                for (int i =inputListSize-6; i < inputListSize; i++) System.out.println("line "+i+" : "+inputList.get(i));
-//            }
-
             long beforGrupping = System.nanoTime();
             System.out.print("Подготовились к группировке за = ");
             System.out.println((beforGrupping - start) / 1_000_000 + " ms");
             System.out.println("inputListSize = " + inputListSize);
-            System.out.println("maxL = " + maxL);
-//Для последующей группировки каждый столбец собираем в Мапу(тел, счетчик)
-//Эти мапы (их будет inputList.size(), т.е. пока 11 шт) собираем в лист
+//Для последующей группировки каждый столбец собираем в Мапу(число, счетчик)
+//Эти мапы (их будет inputList.size()) собираем в лист
 
             HashMap<Float, List<Integer>>[] groupSearchMap = new HashMap[maxL];
             for (int i = 0; i < maxL; i++) {
@@ -151,7 +134,6 @@ public class Main {
                     }
                 }
             }//закончили собирать мапы
-            System.out.println("*** mnumDuplex = " + numDuplex);
             long mapIsReady = System.nanoTime();
             System.out.print("Собрали мапы, время = ");
             System.out.println((mapIsReady - start) / 1_000_000 + " ms");
@@ -182,7 +164,6 @@ public class Main {
             System.out.println("Частотное распределение совпадений по колонкам");
             System.out.println("numGroup = " + Arrays.toString(numGroup));
             System.out.println("Всего совпадений = " + totalSum);
-
             for (int c2 = maxL - 1; c2 >= 1; c2--) {
                 for (int c1 = c2 - 1; c1 >= 0; c1--) {
                     int count = 0;
@@ -190,29 +171,14 @@ public class Main {
                     while (iterator.hasNext()) {
                         List<Integer> listB = iterator.next();
                         boolean isDublicate = false;
-                        for (List<Integer> listA : primaryGroups[c1]) {
-//                            for (int l = 0; (!isDublicate && l < listB.size()); l++) {
-//                                Integer lb = listB.get(l);
-//                                if (Collections.binarySearch(listA, lb) >= 0) {
-//                                    //нашли совпадение - одинаковые номера строк
-//                                    isDublicate = true;
-//                                    count++;
-////                                    Set<Integer> setInt = new HashSet<>(listA);
-//                                    listB.removeAll(listA);
-//                                    listA.addAll(listB);
-//                                    Collections.sort(listA);
-//                                    if (count % 10000 == 0) {
-//                                        System.out.println("column c1 = " + c1 + " c2 = " + c2 + " * Secondary group = " + count);
-//                                    }
-//                                }
-//                            if (isDublicate) break;
-
+                        for (int l = 0; (!isDublicate && l < primaryGroups[c1].size()); l++) {
+                            List<Integer> listA = primaryGroups[c1].get(l);
                             List<Integer> tempList = mergingGroups(listA, listB);
                             if (tempList.size() > listA.size()) {
                                 isDublicate = true;
-                                listA.clear();
-                                listA.addAll(tempList);
-                                if (count++ % 10000 == 0) {
+                                count++;
+                                primaryGroups[c1].set(l, tempList);
+                                if (count % 10000 == 0) {
                                     System.out.println("column c1 = " + c1 + " c2 = " + c2 + " * Secondary group = " + count);
                                 }
                             }
@@ -225,128 +191,51 @@ public class Main {
             }
             System.out.println("Объединили lists во вторичные группы, сортируем для финального вывода");
 
+            long resultG2 = System.nanoTime();
+            System.out.print("*** время = ");
+            System.out.println((resultG2 - start) / 1_000_000 + " ms");
             List<List<Integer>> resultList = new ArrayList<>();//для записи финальных групп
-//            List<List<Integer>> pairs = new ArrayList<>();//для записи номеров групп, где есть совпадения
 
-            System.out.println("вторичная группировка внутри столбца");
-//            primaryGroups[0].sort(new MyListSizeComparator());
+            System.out.println("Контрольная группировка финального столбца");
+            int pGsize = primaryGroups[0].size();
             int cnt = 0;
-            boolean unique0 = true;
-            for (int iLast = primaryGroups[0].size() - 1; iLast >= 1; iLast--) {
-                List<Integer> listL = primaryGroups[0].get(iLast);
-                for (int iPrev = iLast - 1; iPrev >= 0; iPrev--) {
-                    List<Integer> listP = primaryGroups[0].get(iPrev);
-                    List<Integer> tempList = mergingGroups(listP, listL);
-                    if (tempList.size() > listP.size()) {
-                        listP.clear();
-                        listP.addAll(tempList);
-                        if (iPrev == 0) unique0 = false;
-                    if (cnt++ % 1000 == 0) {
-                                System.out.println("column 0 Secondary dubl = " + cnt);
-                            }
-                        }
-                    else {
-                        resultList.add(listL);
+            for (int iUp = 0; iUp < pGsize - 1; iUp++) {
+                List<Integer> listL = primaryGroups[0].get(iUp);
+                boolean uniqueL = true;
+                for (int iDn = iUp + 1; uniqueL && iDn < pGsize; iDn++) {
+                    List<Integer> listP = primaryGroups[0].get(iDn);
+
+                    final List<Integer> tempList = mergingGroups(listP, listL);
+                    if (tempList.size() > listP.size()) {//было совпадение
+                        primaryGroups[0].set(iDn, tempList);
+                        cnt++;
+                        uniqueL = false;
+//                    if (cnt % 1000 == 0) {
+//                                System.out.println("column 0 Secondary dubl = " + cnt);
+//                            }
                     }
+                }
+                if (uniqueL) resultList.add(listL);
             }
-            }
-            if (unique0) {
-                resultList.add(primaryGroups[0].get(0));
-            }//не было в цикле, ни с кем не совпал
-            System.out.println("Обнаружили " + cnt + " пар групп внутри столбца");
-////            могут ли в этих парах быть совпадения номеров строк?
-////            лучше проверить
-//            List<List<Integer>> groupPairs = new ArrayList<>();
-//            List<Integer> tmpList = new ArrayList<>();
-//            for (int i1 = 0; i1 < pairs.size() - 1 && pairs.get(i1).get(0) >= 0; i1++) {
-//                if (!tmpList.isEmpty()) tmpList.clear();
-//                tmpList.addAll(pairs.get(i1));
-//                for (int i2 = i1 + 1; i2 < pairs.size() && pairs.get(i2).get(0) >= 0; i2++) {
-//                    int a = pairs.get(i2).get(0);
-//                    int b = pairs.get(i2).get(1);
-//                    if (pairs.get(i1).contains(a)) {
-//                        tmpList.add(b);
-//                        pairs.get(i2).set(0, -1);
-//                    } else if (pairs.get(i1).contains(b)) {
-//                        tmpList.add(a);
-//                        pairs.get(i2).set(0, -1);
-//                    }
-//                }
-//                groupPairs.add(new ArrayList<>(tmpList));
-//            }
-//            System.out.println("groupPairs List Size = " + groupPairs.size());
-////         Собираем строки с номерами из groupPairs в resultList
-//            for (List<Integer> listI : groupPairs) {
-//                int index = listI.get(0);
-////                List<Integer> listA = primaryGroups[0].get();
-//                for (int i = 1; i < listI.size(); i++) {
-//                    primaryGroups[0].get(listI.get(i)).removeAll(primaryGroups[0].get(index));
-//                    primaryGroups[0].get(index).addAll(primaryGroups[0].get(listI.get(i)));
-//                }
-//                resultList.add(primaryGroups[0].get(index));
+            resultList.add(primaryGroups[0].get(pGsize - 1));
+            //не было в цикле, ни с кем не совпал
 
             System.out.println("Теперь длина списка = " + resultList.size());
-//                            listP.removeAll(listL);
-//                            listP.addAll(listL);
-//                            Collections.sort(listP);
 
-//            int maxListSize = 0;
-//            for (int i = 0; i<maxL; i++){
-//                System.out.println("Столбец "+i+" кол-во групп = "+primaryGroups[i].size());
-//                for (List<Integer> listInt : primaryGroups[i]) {
-//                        if (!listInt.isEmpty()) {
-//                            resultList.add(listInt);
-//                            int lSize = listInt.size();
-//                            if (maxListSize < lSize) maxListSize = lSize;
-//                        }
-//                }
-//                    }
-
-//            System.out.println("maxListSize = " + resultList.size() + ", start sorting");
             resultList.sort(new MyListSizeComparator());
-//            secondaryGroups.sort(new MySetComparator());
-//
-//            int groupNum = secondaryGroups.size();
-//listSecond.removeAll(listFirst) удаляет из лист2 эл-ты, кот есть в лист1
+
             long resultIsReady = System.nanoTime();
             System.out.print("Готов представить результат, время = ");
             System.out.println((resultIsReady - start) / 1_000_000 + " ms");
             System.out.println("Записываем результат в файл ");
-/*
-Объединить все элементы в одну строку через разделитель: и обернуть тегами <b>… </b>
 
-strings.stream().collect(Collectors.joining(": ", "<b> ", " </b>"))
- */
 //Итоговый вывод
             int groupNum = resultList.size();
             int maxGroup = resultList.get(0).size();
-//            try {
-//                BufferedWriter writer = new BufferedWriter(new FileWriter(outname));
-//                writer.write("В итоге получили " + groupNum + " неединичных групп\n");
-//                writer.write("из них " + count + " имеют больше 2 строк\n");
-////            List<Float> outputList = new ArrayList<>();
-//                int g = 1;
-//                for (Set<Integer> res : secondaryGroups) {
-//                    writer.newLine();
-//                    writer.write("Группа " + (g++));
-//                    for (Integer j : res) {
-//                        writer.newLine();
-//                        writer.write(
-//                                inputList.get(j).stream()
-//                                        .map(n -> n == 0 ? "\"\"" : '"' + String.valueOf(n) + '"')
-//                                        .collect(Collectors.joining(";")));
-//                    }
-//                }
-//                writer.close();
-//            } catch (IOException e) {
-//                e.printStackTrace(System.err);
-//            }
-// set --> to list
+
             try {
                 BufferedWriter writer = new BufferedWriter(new FileWriter(outname));
                 writer.write("В итоге получили " + groupNum + " неединичных групп\n");
-//                writer.write("максимальный размер группы = " + maxGroup + " строк\n");
-//            List<Float> outputList = new ArrayList<>();
                 int g = 1;
                 for (List<Integer> res : resultList) {
                     writer.newLine();
@@ -379,8 +268,6 @@ strings.stream().collect(Collectors.joining(": ", "<b> ", " </b>"))
 // метод возвращает true если 2 строки одинаковые
         int listSize = list1.size();
         if (listSize != list2.size()) return false;//сначала сравниваем длину строки
-
-//        if (list1.stream().mapToDouble(Float::doubleValue).sum() != list2.stream().mapToDouble(Float::doubleValue).sum()) return false;
 //затем сравниваем сумму элементов строк
 //если суммы равны, проверяем все элементы попарно
         int originNums = 0;
